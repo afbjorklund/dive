@@ -2,6 +2,7 @@ package docker
 
 import (
 	"archive/tar"
+	"bufio"
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
@@ -29,7 +30,21 @@ func NewImageArchive(tarFile io.ReadCloser) (*ImageArchive, error) {
 		layerMap: make(map[string]*filetree.FileTree),
 	}
 
-	tarReader := tar.NewReader(tarFile)
+	var tarReader *tar.Reader
+	bufferedReader := bufio.NewReader(tarFile)
+	magic, err := bufferedReader.Peek(2)
+	if err != nil {
+		return nil, err
+	}
+	if magic[0] == 0x1f && magic[1] == 0x8b {
+		gz, err := gzip.NewReader(bufferedReader)
+		if err != nil {
+			return nil, err
+		}
+		tarReader = tar.NewReader(gz)
+	} else {
+		tarReader = tar.NewReader(bufferedReader)
+	}
 
 	// store discovered json files in a map so we can read the image in one pass
 	jsonFiles := make(map[string][]byte)
