@@ -87,6 +87,12 @@ func (v *ImageDetails) Render() error {
 		inefficiencyReport += fmt.Sprintf(analysisTemplate, strconv.Itoa(len(data.Nodes)), humanize.Bytes(uint64(data.CumulativeSize)), data.Path)
 	}
 
+	var compressionStr string
+	if v.imageSize > 0 && v.totalSize > 0 {
+		compression := 1.0 - float64(v.imageSize)/float64(v.totalSize)
+		compressionStr = fmt.Sprintf("%s %d %%", format.Header("Image compression:"), int(100.0*compression))
+	}
+
 	imageNameStr := fmt.Sprintf("%s %s", format.Header("Image name:"), v.imageName)
 	imageSizeStr := fmt.Sprintf("%s %s", format.Header("Image size:"), humanize.Bytes(uint64(v.imageSize)))
 	totalSizeStr := fmt.Sprintf("%s %s", format.Header("Total Image size:"), humanize.Bytes(v.totalSize))
@@ -106,7 +112,7 @@ func (v *ImageDetails) Render() error {
 
 		var lines = []string{imageNameStr}
 		if v.imageSize != 0 {
-			lines = append(lines, imageSizeStr)
+			lines = append(lines, imageSizeStr, compressionStr)
 		}
 		lines = append(lines, []string{
 			totalSizeStr,
