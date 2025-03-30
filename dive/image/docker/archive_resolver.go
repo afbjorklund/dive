@@ -19,6 +19,10 @@ func (r *archiveResolver) Name() string {
 }
 
 func (r *archiveResolver) Fetch(path string) (*image.Image, error) {
+	st, err := os.Stat(path)
+	if err != nil {
+		return nil, err
+	}
 	reader, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -29,7 +33,12 @@ func (r *archiveResolver) Fetch(path string) (*image.Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	return img.ToImage()
+	image, err := img.ToImage()
+	if err != nil {
+		return nil, err
+	}
+	image.Size = st.Size()
+	return image, nil
 }
 
 func (r *archiveResolver) Build(args []string) (*image.Image, error) {

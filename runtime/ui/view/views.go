@@ -32,7 +32,7 @@ var _ []IView = []IView{
 	&Debug{},
 }
 
-func NewViews(g *gocui.Gui, imageName string, analysis *image.AnalysisResult, cache filetree.Comparer) (*Views, error) {
+func NewViews(g *gocui.Gui, imageName string, imageSize int64, analysis *image.AnalysisResult, cache filetree.Comparer) (*Views, error) {
 	Layer, err := newLayerView(g, analysis.Layers)
 	if err != nil {
 		return nil, err
@@ -55,7 +55,8 @@ func NewViews(g *gocui.Gui, imageName string, analysis *image.AnalysisResult, ca
 	ImageDetails := &ImageDetails{
 		gui:            g,
 		imageName:      imageName,
-		imageSize:      analysis.SizeBytes,
+		imageSize:      imageSize,
+		totalSize:      analysis.SizeBytes,
 		efficiency:     analysis.Efficiency,
 		inefficiencies: analysis.Inefficiencies,
 	}

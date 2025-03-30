@@ -19,8 +19,8 @@ type Controller struct {
 	imageName string
 }
 
-func NewCollection(g *gocui.Gui, imageName string, resolver image.Resolver, analysis *image.AnalysisResult, cache filetree.Comparer) (*Controller, error) {
-	views, err := view.NewViews(g, imageName, analysis, cache)
+func NewCollection(g *gocui.Gui, imageName string, imageSize int64, resolver image.Resolver, analysis *image.AnalysisResult, cache filetree.Comparer) (*Controller, error) {
+	views, err := view.NewViews(g, imageName, imageSize, analysis, cache)
 	if err != nil {
 		return nil, err
 	}

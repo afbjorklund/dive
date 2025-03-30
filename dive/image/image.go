@@ -5,6 +5,7 @@ import (
 )
 
 type Image struct {
+	Size   int64
 	Trees  []*filetree.FileTree
 	Layers []*Layer
 }

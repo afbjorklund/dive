@@ -19,7 +19,8 @@ type ImageDetails struct {
 	body           *gocui.View
 	header         *gocui.View
 	imageName      string
-	imageSize      uint64
+	imageSize      int64
+	totalSize      uint64
 	efficiency     float64
 	inefficiencies filetree.EfficiencySlice
 }
@@ -87,7 +88,8 @@ func (v *ImageDetails) Render() error {
 	}
 
 	imageNameStr := fmt.Sprintf("%s %s", format.Header("Image name:"), v.imageName)
-	imageSizeStr := fmt.Sprintf("%s %s", format.Header("Total Image size:"), humanize.Bytes(v.imageSize))
+	imageSizeStr := fmt.Sprintf("%s %s", format.Header("Image size:"), humanize.Bytes(uint64(v.imageSize)))
+	totalSizeStr := fmt.Sprintf("%s %s", format.Header("Total Image size:"), humanize.Bytes(v.totalSize))
 	efficiencyStr := fmt.Sprintf("%s %d %%", format.Header("Image efficiency score:"), int(100.0*v.efficiency))
 	wastedSpaceStr := fmt.Sprintf("%s %s", format.Header("Potential wasted space:"), humanize.Bytes(uint64(wastedSpace)))
 
@@ -102,14 +104,17 @@ func (v *ImageDetails) Render() error {
 			logrus.Debug("unable to write to buffer: ", err)
 		}
 
-		var lines = []string{
-			imageNameStr,
-			imageSizeStr,
+		var lines = []string{imageNameStr}
+		if v.imageSize != 0 {
+			lines = append(lines, imageSizeStr)
+		}
+		lines = append(lines, []string{
+			totalSizeStr,
 			wastedSpaceStr,
 			efficiencyStr,
 			" ", // to avoid an empty line so CursorDown can work as expected
 			inefficiencyReport,
-		}
+		}...)
 
 		v.body.Clear()
 		_, err = fmt.Fprintln(v.body, strings.Join(lines, "\n"))
