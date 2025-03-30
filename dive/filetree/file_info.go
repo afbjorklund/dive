@@ -3,8 +3,11 @@ package filetree
 import (
 	"archive/tar"
 	"io"
+	"io/fs"
 	"os"
+	"strings"
 
+	"github.com/CalebQ42/squashfs"
 	"github.com/cespare/xxhash/v2"
 	"github.com/sirupsen/logrus"
 )
@@ -39,6 +42,77 @@ func NewFileInfoFromTarHeader(reader *tar.Reader, header *tar.Header, path strin
 		Uid:      header.Uid,
 		Gid:      header.Gid,
 		IsDir:    header.FileInfo().IsDir(),
+	}
+}
+
+var lookup = map[uint]string{}
+var hashes = map[uint]uint64{}
+
+func NewFileInfoFromDirEntry(reader fs.FS, entry fs.DirEntry, path string) FileInfo {
+	var fileType byte
+	var linkName string
+	var symlink bool
+	var link bool
+	var size int64
+	var inode uint
+	uid := -1
+	gid := -1
+
+	info, _ := entry.Info()
+	symlink = info.Mode()&fs.ModeSymlink != 0
+	sfi, ok := info.(squashfs.FileInfo)
+	if ok {
+		uid = sfi.Uid()
+		gid = sfi.Gid()
+
+		inode = sfi.Inode()
+		linkName, link = lookup[inode]
+		if !link {
+			// insert first
+			lookup[inode] = path
+			linkName = sfi.SymlinkPath()
+		}
+	}
+
+	if symlink {
+		fileType = tar.TypeSymlink
+	} else if link {
+		fileType = tar.TypeLink
+	} else if entry.IsDir() {
+		fileType = tar.TypeDir
+	} else {
+		fileType = tar.TypeReg
+
+		size = info.Size()
+	}
+	var hash uint64
+	if !entry.IsDir() && !symlink && !link {
+		file, err := reader.Open(path)
+		if err != nil {
+			logrus.Panic("unable to read file:", path)
+		}
+		defer file.Close()
+		hash = getHashFromReader(file)
+		if inode != 0 {
+			hashes[inode] = hash
+		}
+	} else if symlink {
+		target := strings.NewReader(linkName)
+		hash = getHashFromReader(target)
+	} else if link {
+		hash = hashes[inode]
+	}
+
+	return FileInfo{
+		Path:     path,
+		TypeFlag: fileType,
+		Linkname: linkName,
+		hash:     hash,
+		Size:     size,
+		Mode:     info.Mode(),
+		Uid:      uid,
+		Gid:      gid,
+		IsDir:    info.IsDir(),
 	}
 }
 

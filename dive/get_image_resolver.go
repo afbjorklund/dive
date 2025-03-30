@@ -7,6 +7,7 @@ import (
 	"github.com/wagoodman/dive/dive/image"
 	"github.com/wagoodman/dive/dive/image/docker"
 	"github.com/wagoodman/dive/dive/image/podman"
+	"github.com/wagoodman/dive/dive/image/singularity"
 )
 
 const (
@@ -14,14 +15,15 @@ const (
 	SourceDockerEngine
 	SourcePodmanEngine
 	SourceDockerArchive
+	SourceSingularityFile
 )
 
 type ImageSource int
 
-var ImageSources = []string{SourceDockerEngine.String(), SourcePodmanEngine.String(), SourceDockerArchive.String()}
+var ImageSources = []string{SourceDockerEngine.String(), SourcePodmanEngine.String(), SourceDockerArchive.String(), SourceSingularityFile.String()}
 
 func (r ImageSource) String() string {
-	return [...]string{"unknown", "docker", "podman", "docker-archive"}[r]
+	return [...]string{"unknown", "docker", "podman", "docker-archive", "sif"}[r]
 }
 
 func ParseImageSource(r string) ImageSource {
@@ -34,6 +36,10 @@ func ParseImageSource(r string) ImageSource {
 		return SourceDockerArchive
 	case "docker-tar":
 		return SourceDockerArchive
+	case SourceSingularityFile.String():
+		return SourceSingularityFile
+	case "singularity":
+		return SourceSingularityFile
 	default:
 		return SourceUnknown
 	}
@@ -55,6 +61,10 @@ func DeriveImageSource(image string) (ImageSource, string) {
 		return SourceDockerArchive, imageSource
 	case "docker-tar":
 		return SourceDockerArchive, imageSource
+	case SourceSingularityFile.String():
+		return SourceSingularityFile, imageSource
+	case "singularity":
+		return SourceSingularityFile, imageSource
 	}
 	return SourceUnknown, ""
 }
@@ -67,6 +77,8 @@ func GetImageResolver(r ImageSource) (image.Resolver, error) {
 		return podman.NewResolverFromEngine(), nil
 	case SourceDockerArchive:
 		return docker.NewResolverFromArchive(), nil
+	case SourceSingularityFile:
+		return singularity.NewResolverFromFile(), nil
 	}
 
 	return nil, fmt.Errorf("unable to determine image resolver")
